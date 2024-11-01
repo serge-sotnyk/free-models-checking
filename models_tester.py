@@ -10,20 +10,33 @@ load_dotenv()
 # Define model configurations
 MODEL_CONFIGS = {
     "groq": {
-        "model_id": "llama-3.1-70b-versatile",
+        "model_ids": [
+            "llama-3.1-70b-versatile", 
+            # "mixtral-8x7b-32768"
+        ],
         "api_key_env": "GROQ_API_KEY"
     },
     "sambanova": {
-        # "model_id": "Meta-Llama-3.1-405B-Instruct",
-        "model_id": "Meta-Llama-3.1-70B-Instruct",
+        "model_ids": [
+            "Meta-Llama-3.1-70B-Instruct",
+            "Meta-Llama-3.1-405B-Instruct"
+        ],
         "api_key_env": "SAMBANOVA_API_KEY"
     },
     "cerebras": {
-        "model_id": "llama3.1-70b",
+        "model_ids": [
+            "llama3.1-70b",
+            "llama3.1-8b",
+        ],
         "api_key_env": "CEREBRAS_API_KEY"
     },
     "openrouter": {
-        "model_id": "google/gemini-pro-1.5-exp",
+        "model_ids": [
+            "microsoft/phi-3-medium-128k-instruct:free",
+            "google/gemini-pro-1.5-exp",
+            "google/gemini-flash-1.5-exp",
+            "meta-llama/llama-3.1-405b-instruct:free"
+        ],
         "api_key_env": "OPENROUTER_API_KEY"
     }
 }
@@ -48,8 +61,8 @@ def load_text_for_summarization() -> str:
         return file.read()
 
 
-def create_model_instance(provider: str):
-    """Create model instance based on provider"""
+def create_model_instance(provider: str, model_id: str):
+    """Create model instance based on provider and specific model_id"""
     config = MODEL_CONFIGS[provider]
     api_key = os.getenv(config["api_key_env"])
 
@@ -58,18 +71,20 @@ def create_model_instance(provider: str):
 
     if provider == "groq":
         from langchain_groq import ChatGroq
-        return ChatGroq(model=config["model_id"])
+        return ChatGroq(model=model_id)
     elif provider == "sambanova":
         from langchain_community.chat_models import ChatSambaNovaCloud
-        return ChatSambaNovaCloud(model=config["model_id"])
+        return ChatSambaNovaCloud(model=model_id)
     elif provider == "cerebras":
         from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=config["model_id"],
-                          openai_api_key=config["api_key_env"],
+        return ChatOpenAI(model=model_id,
+                          api_key=os.getenv(config["api_key_env"]),
                           base_url="https://api.cerebras.ai/v1")
     elif provider == "openrouter":
-        from langchain_openrouter import OpenRouterLLM
-        return OpenRouterLLM(model=config["model_id"])
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(model=model_id,
+                          api_key=os.getenv(config["api_key_env"]),
+                          base_url="https://openrouter.ai/api/v1")
 
     raise ValueError(f"Unknown provider: {provider}")
 
@@ -126,45 +141,51 @@ def test_tool_usage(model) -> dict:
 
 def main():
     """Main testing function"""
-    results: dict[str, dict] = {}
+    results = {}
     text = load_text_for_summarization()
 
-    for provider in MODEL_CONFIGS.keys():
+    for provider, config in MODEL_CONFIGS.items():
+        results[provider] = {}
         print(f"\nTesting {provider}...")
-        results[provider] = {"summarization": None, "tool_usage": None}
 
-        try:
-            model = create_model_instance(provider)
+        for model_id in config["model_ids"]:
+            print(f"\nTesting model: {model_id}")
+            results[provider][model_id] = {"summarization": None, "tool_usage": None}
 
-            # Test 1: Summarization
-            print("Testing summarization...")
-            # results[provider]["summarization"] = test_summarization(model, text)
+            try:
+                model = create_model_instance(provider, model_id)
 
-            # Test 2: Tool usage
-            print("Testing tool usage...")
-            results[provider]["tool_usage"] = test_tool_usage(model)
+                # Test 1: Summarization
+                print("Testing summarization...")
+                results[provider][model_id]["summarization"] = test_summarization(model, text)
 
-        except Exception as e:
-            print(f"Error testing {provider}: {str(e)}")
-            results[provider]["error"] = str(e)
+                # Test 2: Tool usage
+                print("Testing tool usage...")
+                results[provider][model_id]["tool_usage"] = test_tool_usage(model)
+
+            except Exception as e:
+                print(f"Error testing {provider} - {model_id}: {str(e)}")
+                results[provider][model_id]["error"] = str(e)
 
     # Print results
-    for provider, result in results.items():
+    for provider, provider_results in results.items():
         print(f"\n=== Results for {provider} ===")
-        if "error" in result:
-            print(f"Error: {result['error']}")
-        else:
-            print("\nSummarization test:")
-            if result["summarization"]["success"]:
-                print(f"Summary: {result['summarization']['summary']}")
+        for model_id, result in provider_results.items():
+            print(f"\nModel: {model_id}")
+            if "error" in result:
+                print(f"Error: {result['error']}")
             else:
-                print(f"Failed: {result['summarization']['error']}")
+                print("\nSummarization test:")
+                if result["summarization"]["success"]:
+                    print(f"Summary: {result['summarization']['summary']}")
+                else:
+                    print(f"Failed: {result['summarization']['error']}")
 
-            print("\nTool usage test:")
-            if result["tool_usage"]["success"]:
-                print(f"Result: {result['tool_usage']['result']}")
-            else:
-                print(f"Failed: {result['tool_usage']['error']}")
+                print("\nTool usage test:")
+                if result["tool_usage"]["success"]:
+                    print(f"Result: {result['tool_usage']['result']}")
+                else:
+                    print(f"Failed: {result['tool_usage']['error']}")
 
 
 if __name__ == "__main__":
