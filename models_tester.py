@@ -1,58 +1,59 @@
 import os
+
 from dotenv import load_dotenv
-from langchain.agents import AgentExecutor, create_react_agent
 from langchain.prompts import PromptTemplate
-from langchain_core.tools import Tool, StructuredTool
+from langchain_core.tools import StructuredTool
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Define model configurations
 MODEL_CONFIGS = {
-    # "groq": {
-    #     "model_ids": [
-    #         "llama-3.1-70b-versatile",
-    #         # "mixtral-8x7b-32768"
-    #     ],
-    #     "api_key_env": "GROQ_API_KEY"
-    # },
-    # "sambanova": {
-    #     "model_ids": [
-    #         "Meta-Llama-3.1-70B-Instruct",
-    #         "Meta-Llama-3.1-405B-Instruct"
-    #     ],
-    #     "api_key_env": "SAMBANOVA_API_KEY"
-    # },
-    # "cerebras": {
-    #     "model_ids": [
-    #         "llama3.1-70b",
-    #         "llama3.1-8b",
-    #     ],
-    #     "api_key_env": "CEREBRAS_API_KEY"
-    # },
-    # "openrouter": {
-    #     "model_ids": [
-    #         "microsoft/phi-3-medium-128k-instruct:free",
-    #         "google/gemini-pro-1.5-exp",
-    #         "google/gemini-flash-1.5-exp",
-    #         "meta-llama/llama-3.1-405b-instruct:free"
-    #     ],
-    #     "api_key_env": "OPENROUTER_API_KEY"
-    # },
-    # "google": {
-    #     "model_ids": [
-    #         "gemini-1.5-pro-exp-0827",
-    #         "gemini-1.5-flash-exp-0827",
-    #     ],
-    #     "api_key_env": "GEMINI_API_KEY"
-    # },
+    "groq": {
+        "model_ids": [
+            "llama-3.1-70b-versatile",
+            # "mixtral-8x7b-32768"
+        ],
+        "api_key_env": "GROQ_API_KEY"
+    },
+    "sambanova": {
+        "model_ids": [
+            "Meta-Llama-3.1-70B-Instruct",
+            "Meta-Llama-3.1-405B-Instruct"
+        ],
+        "api_key_env": "SAMBANOVA_API_KEY"
+    },
+    "cerebras": {
+        "model_ids": [
+            "llama3.1-70b",
+            "llama3.1-8b",
+        ],
+        "api_key_env": "CEREBRAS_API_KEY"
+    },
+    "openrouter": {
+        "model_ids": [
+            "microsoft/phi-3-medium-128k-instruct:free",
+            "google/gemini-pro-1.5-exp",
+            "google/gemini-flash-1.5-exp",
+            "meta-llama/llama-3.1-405b-instruct:free"
+            "nousresearch/hermes-3-llama-3.1-405b:free"
+        ],
+        "api_key_env": "OPENROUTER_API_KEY"
+    },
+    "google": {
+        "model_ids": [
+            "gemini-1.5-pro-exp-0827",
+            "gemini-1.5-flash-exp-0827",
+        ],
+        "api_key_env": "GEMINI_API_KEY"
+    },
     "github": {
         "model_ids": [
             "gpt-4o",
             "gpt-4o-mini",
             "Meta-Llama-3.1-405B-Instruct",
         ],
-        "api_key_env": "GITHUB_TOKEN"
+        "api_key_env": "GITHUB_API_KEY"
     }
 }
 
@@ -219,5 +220,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print(calculator.invoke({"a": 2, "b": 3}))
     main()

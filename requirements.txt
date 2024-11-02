@@ -6,3 +6,4 @@ langchain-openai
 langchain-openrouter
 langchain-google-genai
 python-dotenv
+litellm
