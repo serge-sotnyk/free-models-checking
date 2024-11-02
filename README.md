@@ -1,6 +1,17 @@
 # free-models-checking
 Smoke-test for free models
 
+It is a small test for providers that give access to use LLMs for free.
+
+How to use:
+
+1. install requirements.txt (better into virtual environment)
+2. create .env file with API keys (use .env.example as a template)
+3. run `python models_tester.py`
+4. run `python models_tester_litellm.py`
+
+Below we can see the results on the 2024-11-02 (YYYY-MM-DD) date.
+
 ## Light-llm test:
 === Results for github/gpt-4o ===
 
