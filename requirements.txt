@@ -4,4 +4,5 @@ langchain-cerebras
 langchain-groq
 langchain-openai
 langchain-openrouter
+langchain-google-genai
 python-dotenv

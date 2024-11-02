@@ -9,35 +9,50 @@ load_dotenv()
 
 # Define model configurations
 MODEL_CONFIGS = {
-    "groq": {
+    # "groq": {
+    #     "model_ids": [
+    #         "llama-3.1-70b-versatile",
+    #         # "mixtral-8x7b-32768"
+    #     ],
+    #     "api_key_env": "GROQ_API_KEY"
+    # },
+    # "sambanova": {
+    #     "model_ids": [
+    #         "Meta-Llama-3.1-70B-Instruct",
+    #         "Meta-Llama-3.1-405B-Instruct"
+    #     ],
+    #     "api_key_env": "SAMBANOVA_API_KEY"
+    # },
+    # "cerebras": {
+    #     "model_ids": [
+    #         "llama3.1-70b",
+    #         "llama3.1-8b",
+    #     ],
+    #     "api_key_env": "CEREBRAS_API_KEY"
+    # },
+    # "openrouter": {
+    #     "model_ids": [
+    #         "microsoft/phi-3-medium-128k-instruct:free",
+    #         "google/gemini-pro-1.5-exp",
+    #         "google/gemini-flash-1.5-exp",
+    #         "meta-llama/llama-3.1-405b-instruct:free"
+    #     ],
+    #     "api_key_env": "OPENROUTER_API_KEY"
+    # },
+    # "google": {
+    #     "model_ids": [
+    #         "gemini-1.5-pro-exp-0827",
+    #         "gemini-1.5-flash-exp-0827",
+    #     ],
+    #     "api_key_env": "GEMINI_API_KEY"
+    # },
+    "github": {
         "model_ids": [
-            "llama-3.1-70b-versatile", 
-            # "mixtral-8x7b-32768"
+            "gpt-4o",
+            "gpt-4o-mini",
+            "Meta-Llama-3.1-405B-Instruct",
         ],
-        "api_key_env": "GROQ_API_KEY"
-    },
-    "sambanova": {
-        "model_ids": [
-            "Meta-Llama-3.1-70B-Instruct",
-            "Meta-Llama-3.1-405B-Instruct"
-        ],
-        "api_key_env": "SAMBANOVA_API_KEY"
-    },
-    "cerebras": {
-        "model_ids": [
-            "llama3.1-70b",
-            "llama3.1-8b",
-        ],
-        "api_key_env": "CEREBRAS_API_KEY"
-    },
-    "openrouter": {
-        "model_ids": [
-            "microsoft/phi-3-medium-128k-instruct:free",
-            "google/gemini-pro-1.5-exp",
-            "google/gemini-flash-1.5-exp",
-            "meta-llama/llama-3.1-405b-instruct:free"
-        ],
-        "api_key_env": "OPENROUTER_API_KEY"
+        "api_key_env": "GITHUB_TOKEN"
     }
 }
 
@@ -85,7 +100,15 @@ def create_model_instance(provider: str, model_id: str):
         return ChatOpenAI(model=model_id,
                           api_key=os.getenv(config["api_key_env"]),
                           base_url="https://openrouter.ai/api/v1")
-
+    elif provider == "google":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(model=model_id,
+                                      api_key=os.getenv(config["api_key_env"]))
+    elif provider == "github":
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(model=model_id,
+                          api_key=os.getenv(config["api_key_env"]),
+                          base_url="https://models.inference.ai.azure.com")
     raise ValueError(f"Unknown provider: {provider}")
 
 
@@ -139,53 +162,60 @@ def test_tool_usage(model) -> dict:
         }
 
 
+def test_single_model(provider: str, model_id: str, text: str) -> dict:
+    """Run all tests for a single model and return results"""
+    try:
+        model = create_model_instance(provider, model_id)
+        return {
+            "summarization": test_summarization(model, text),
+            "tool_usage": test_tool_usage(model),
+            "success": True
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "success": False
+        }
+
+
+def print_model_results(model_id: str, result: dict):
+    """Print results for a single model"""
+    print(f"\nModel: {model_id}")
+    if not result.get("success"):
+        print(f"Error: {result['error']}")
+        return
+
+    print("\nSummarization test:")
+    if result["summarization"]["success"]:
+        print(f"Summary: {result['summarization']['summary']}")
+    else:
+        print(f"Failed: {result['summarization']['error']}")
+
+    print("\nTool usage test:")
+    if result["tool_usage"]["success"]:
+        print(f"Result: {result['tool_usage']['result']}")
+    else:
+        print(f"Failed: {result['tool_usage']['error']}")
+
+
 def main():
     """Main testing function"""
     results = {}
     text = load_text_for_summarization()
 
     for provider, config in MODEL_CONFIGS.items():
-        results[provider] = {}
         print(f"\nTesting {provider}...")
-
+        results[provider] = {}
+        
         for model_id in config["model_ids"]:
             print(f"\nTesting model: {model_id}")
-            results[provider][model_id] = {"summarization": None, "tool_usage": None}
-
-            try:
-                model = create_model_instance(provider, model_id)
-
-                # Test 1: Summarization
-                print("Testing summarization...")
-                results[provider][model_id]["summarization"] = test_summarization(model, text)
-
-                # Test 2: Tool usage
-                print("Testing tool usage...")
-                results[provider][model_id]["tool_usage"] = test_tool_usage(model)
-
-            except Exception as e:
-                print(f"Error testing {provider} - {model_id}: {str(e)}")
-                results[provider][model_id]["error"] = str(e)
+            results[provider][model_id] = test_single_model(provider, model_id, text)
 
     # Print results
     for provider, provider_results in results.items():
         print(f"\n=== Results for {provider} ===")
         for model_id, result in provider_results.items():
-            print(f"\nModel: {model_id}")
-            if "error" in result:
-                print(f"Error: {result['error']}")
-            else:
-                print("\nSummarization test:")
-                if result["summarization"]["success"]:
-                    print(f"Summary: {result['summarization']['summary']}")
-                else:
-                    print(f"Failed: {result['summarization']['error']}")
-
-                print("\nTool usage test:")
-                if result["tool_usage"]["success"]:
-                    print(f"Result: {result['tool_usage']['result']}")
-                else:
-                    print(f"Failed: {result['tool_usage']['error']}")
+            print_model_results(model_id, result)
 
 
 if __name__ == "__main__":
