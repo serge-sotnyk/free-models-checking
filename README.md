@@ -1,4 +1,8 @@
 # free-models-checking
+Repository for post:
+* English version: https://serge-sotnyk.blogspot.com/2024/11/free-apis-for-llms.html
+* Ukrainian version: https://www.linkedin.com/pulse/%D0%B1%D0%B5%D0%B7%D0%BA%D0%BE%D1%88%D1%82%D0%BE%D0%B2%D0%BD%D1%96-api-%D0%B4%D0%BE-llm-serge-sotnyk-dr72f
+
 Smoke-test for free models
 
 It is a small test for providers that give access to use LLMs for free.
